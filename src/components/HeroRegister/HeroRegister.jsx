@@ -1,7 +1,12 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  updateProfile,
+} from "firebase/auth";
 import auth from "../../firebase/firebase.config";
 import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const HeroRegister = () => {
   const [registerError, setRegisterError] = useState("");
@@ -9,6 +14,7 @@ const HeroRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
   const handleRegister = (e) => {
     e.preventDefault();
+    const name = e.target.name.value;
     const email = e.target.email.value;
     const password = e.target.password.value;
     const accepted = e.target.terms.checked;
@@ -33,9 +39,22 @@ const HeroRegister = () => {
     // create user
     createUserWithEmailAndPassword(auth, email, password)
       .then((result) => {
-        const user = result.user;
         setSuccess("User Created Successfully");
-        console.log(user);
+
+        updateProfile(result.user, {
+          displayName: name,
+          photoURL: "",
+        })
+          .then((result) => {
+            console.log("Profile updated", result.user);
+          })
+          .catch((error) => {
+            console.log(error.message);
+          });
+
+        sendEmailVerification(result.user).then((result) => {
+          alert("verify your email", result.user);
+        });
       })
       .catch((error) => {
         setRegisterError(error.message);
@@ -54,6 +73,18 @@ const HeroRegister = () => {
         </div>
         <div className="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
           <form onSubmit={handleRegister} className="card-body">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Name</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter your name"
+                name="name"
+                className="input input-bordered"
+                required
+              />
+            </div>
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Email</span>
@@ -104,6 +135,12 @@ const HeroRegister = () => {
               <p className="text-red-800 text-center">{registerError}</p>
             )}
             {success && <p className="text-green-900 text-center">{success}</p>}
+            <p>
+              Already have an account?{" "}
+              <Link className="text-blue-800" to="/heroLogin">
+                Please Login
+              </Link>
+            </p>
           </form>
         </div>
       </div>

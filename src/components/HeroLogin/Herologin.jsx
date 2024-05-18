@@ -1,25 +1,61 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import auth from "../../firebase/firebase.config";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { Link } from "react-router-dom";
 
 const Herologin = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [registerError, setRegisterError] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [success, setSuccess] = useState("");
+  const emailRef = useRef(null);
 
   const handleLogin = (e) => {
     e.preventDefault();
     const email = e.target.email.value;
     const password = e.target.password.value;
 
+    // reset
+    setLoginError("");
+    setSuccess("");
+
     signInWithEmailAndPassword(auth, email, password)
       .then((result) => {
-        console.log(result.user);
-        setSuccess("User Loggedin Successfully");
+        if (result.user.emailVerified) {
+          setSuccess("User Loggedin Successfully");
+          console.log(result.user);
+        } else {
+          setLoginError("Please verify your email");
+        }
       })
       .catch((error) => {
-        setRegisterError(error.message);
+        setLoginError(error.message);
+      });
+  };
+
+  const handleForgetPassword = () => {
+    const email = emailRef.current.value;
+
+    if (!email) {
+      console.log("enter an email address");
+      return;
+    } else if (
+      !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
+    ) {
+      console.log("its not a vlid email");
+      return;
+    }
+
+    sendPasswordResetEmail(auth, email)
+      .then((result) => {
+        console.log(result);
+        alert("Check your email");
+      })
+      .catch((error) => {
+        setLoginError(error.message);
       });
   };
 
@@ -45,6 +81,7 @@ const Herologin = () => {
                 placeholder="email"
                 className="input input-bordered"
                 name="email"
+                ref={emailRef}
                 required
               />
             </div>
@@ -59,7 +96,6 @@ const Herologin = () => {
                     placeholder="password"
                     name="password"
                     className="input input-bordered"
-                    required
                   />
                   <span
                     className="absolute top-14 left-72"
@@ -70,7 +106,11 @@ const Herologin = () => {
                 </div>
               </div>
               <label className="label">
-                <a href="#" className="label-text-alt link link-hover">
+                <a
+                  onClick={handleForgetPassword}
+                  href="#"
+                  className="label-text-alt link link-hover"
+                >
                   Forgot password?
                 </a>
               </label>
@@ -78,10 +118,16 @@ const Herologin = () => {
             <div className="form-control mt-6">
               <button className="btn btn-primary">Login</button>
             </div>
-            {registerError && (
-              <p className="text-red-800 text-center">{registerError}</p>
+            {loginError && (
+              <p className="text-red-800 text-center">{loginError}</p>
             )}
             {success && <p className="text-green-900 text-center">{success}</p>}
+            <p>
+              New to this website?{" "}
+              <Link className="text-blue-800" to="/heroRegister">
+                Please Register
+              </Link>
+            </p>
           </form>
         </div>
       </div>
